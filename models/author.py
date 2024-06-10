@@ -1,3 +1,4 @@
+# from models.article import Article
 from database.connection import get_db_connection
 
 class Author:
@@ -30,29 +31,26 @@ class Author:
         return self._name
 
     def articles(self):
+        from models.article import Article  # Delayed import
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT a.*
-            FROM articles a
-            WHERE a.author_id = ?
-        ''', (self.id,))
-        rows = cursor.fetchall()
+        cursor.execute('SELECT * FROM articles WHERE author_id = ?', (self.id,))
+        articles_rows = cursor.fetchall()
         conn.close()
-        return [Article(row['id'], row['title'], row['content'], row['author_id'], row['magazine_id']) for row in rows]
+        return [Article(row['id'], row['title'], row['content'], row['author_id'], row['magazine_id']) for row in articles_rows]
 
     def magazines(self):
+        from models.magazine import Magazine  # Delayed import
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT DISTINCT m.*
-            FROM magazines m
-            JOIN articles a ON m.id = a.magazine_id
-            WHERE a.author_id = ?
+            SELECT DISTINCT magazines.* FROM magazines
+            JOIN articles ON magazines.id = articles.magazine_id
+            WHERE articles.author_id = ?
         ''', (self.id,))
-        rows = cursor.fetchall()
+        magazine_rows = cursor.fetchall()
         conn.close()
-        return [Magazine(row['id'], row['name'], row['category']) for row in rows]
-
+        return [Magazine(row['id'], row['name'], row['category']) for row in magazine_rows]
+    
     def __repr__(self):
         return f'<Author {self.name}>'

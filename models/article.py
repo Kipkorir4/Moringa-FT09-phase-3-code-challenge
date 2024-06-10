@@ -45,31 +45,27 @@ class Article:
 
     @property
     def author(self):
+        from models.author import Author 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT au.*
-            FROM authors au
-            JOIN articles a ON au.id = a.author_id
-            WHERE a.id = ?
-        ''', (self.id,))
+        cursor.execute('SELECT * FROM authors WHERE id = ?', (self.author_id,))
         author_row = cursor.fetchone()
         conn.close()
-        return Author(author_row['id'], author_row['name'])
+        if author_row:
+            return Author(author_row['id'], author_row['name'])
+        return None
 
     @property
     def magazine(self):
+        from models.magazine import Magazine
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT m.*
-            FROM magazines m
-            JOIN articles a ON m.id = a.magazine_id
-            WHERE a.id = ?
-        ''', (self.id,))
+        cursor.execute('SELECT * FROM magazines WHERE id = ?', (self.magazine_id,))
         magazine_row = cursor.fetchone()
         conn.close()
-        return Magazine(magazine_row['id'], magazine_row['name'], magazine_row['category'])
-
+        if magazine_row:
+            return Magazine(magazine_row['id'], magazine_row['name'], magazine_row['category'])
+        return None
     def __repr__(self):
         return f'<Article {self.title}>'
+    

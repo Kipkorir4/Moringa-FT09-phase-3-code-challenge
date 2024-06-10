@@ -1,3 +1,5 @@
+from models.article import Article
+from models.author import Author
 from database.connection import get_db_connection
 
 class Magazine:
@@ -59,48 +61,45 @@ class Magazine:
             raise ValueError("Category must be a non-empty string")
 
     def articles(self):
+        from models.article import Article 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT a.*
-            FROM articles a
-            WHERE a.magazine_id = ?
-        ''', (self.id,))
-        rows = cursor.fetchall()
+        cursor.execute('SELECT * FROM articles WHERE magazine_id = ?', (self.id,))
+        articles_rows = cursor.fetchall()
         conn.close()
-        return [Article(row['id'], row['title'], row['content'], row['author_id'], row['magazine_id']) for row in rows]
+        return [Article(row['id'], row['title'], row['content'], row['author_id'], row['magazine_id']) for row in articles_rows]
 
     def contributors(self):
+        from models.author import Author  
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT DISTINCT au.*
-            FROM authors au
-            JOIN articles a ON au.id = a.author_id
-            WHERE a.magazine_id = ?
+            SELECT DISTINCT authors.* FROM authors
+            JOIN articles ON authors.id = articles.author_id
+            WHERE articles.magazine_id = ?
         ''', (self.id,))
-        rows = cursor.fetchall()
+        author_rows = cursor.fetchall()
         conn.close()
-        return [Author(row['id'], row['name']) for row in rows]
+        return [Author(row['id'], row['name']) for row in author_rows]
 
     def article_titles(self):
         articles = self.articles()
         return [article.title for article in articles] if articles else None
 
     def contributing_authors(self):
+        from models.author import Author
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT au.*, COUNT(a.id) as article_count
-            FROM authors au
-            JOIN articles a ON au.id = a.author_id
-            WHERE a.magazine_id = ?
-            GROUP BY au.id
+            SELECT authors.*, COUNT(articles.id) as article_count FROM authors
+            JOIN articles ON authors.id = articles.author_id
+            WHERE articles.magazine_id = ?
+            GROUP BY authors.id
             HAVING article_count > 2
         ''', (self.id,))
-        rows = cursor.fetchall()
+        author_rows = cursor.fetchall()
         conn.close()
-        return [Author(row['id'], row['name']) for row in rows] if rows else None
+        return [Author(row['id'], row['name']) for row in author_rows] if author_rows else None
 
     def __repr__(self):
         return f'<Magazine {self.name}>'
